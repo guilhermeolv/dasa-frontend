@@ -1,34 +1,51 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { Routes, Route } from 'react-router-dom'
+import { ThemeProvider as MUIThemeProvider, createTheme } from '@mui/material'
+import { ThemeProvider as StyledThemeProvider } from 'styled-components'
+import Home from './pages/home'
+import { ProductList } from './pages/products'
+import { CategoryList } from './pages/categories'
+import { DefaultLayout } from './components/layout/DefaultLayout'
 import './App.css'
+import { theme as styledTheme } from './styles/theme'
+
+const muiTheme = createTheme({
+  palette: {
+    primary: {
+      main: '#0047AB',
+    },
+    secondary: {
+      main: '#11114E',
+    },
+    background: {
+      default: '#050516',
+      paper: '#ffff',
+    },
+  },
+})
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <MUIThemeProvider theme={muiTheme}>
+      <StyledThemeProvider theme={styledTheme}>
+        <Routes>
+          <Route path="/" element={
+            <DefaultLayout>
+              <Home />
+            </DefaultLayout>
+          } />
+          <Route path="/products" element={
+            <DefaultLayout>
+              <ProductList />
+            </DefaultLayout>
+          } />
+          <Route path="/categories" element={
+            <DefaultLayout>
+              <CategoryList />
+            </DefaultLayout>
+          } />
+        </Routes>
+      </StyledThemeProvider>
+    </MUIThemeProvider>
   )
 }
 
