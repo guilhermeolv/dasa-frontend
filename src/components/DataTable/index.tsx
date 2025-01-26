@@ -21,19 +21,25 @@ interface DataTableProps<T> {
     columns: Column[]
     data: T[]
     onAdd?: () => void
+    onSave?: () => void
+    onFieldChange?: (key: string, value: any) => void
+    loading?: boolean
+    isAddingNew?: boolean
     onEdit?: (id: number) => void
     onDelete?: (id: number) => void
-    loading?: boolean
 }
 
 export function DataTable<T extends { id: number }>({ 
     title, 
     columns, 
-    data, 
-    onAdd, 
-    onEdit, 
-    onDelete, 
-    loading 
+    data,
+    onAdd,
+    onSave,
+    onFieldChange,
+    loading,
+    isAddingNew,
+    onEdit,
+    onDelete
 }: DataTableProps<T>) {
     return (
         <MUIContainer maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -45,15 +51,27 @@ export function DataTable<T extends { id: number }>({
                     marginBottom: '1rem'
                 }}>
                     <h2>{title}</h2>
-                    {onAdd && (
-                        <Button
-                            variant="contained"
-                            startIcon={<AddIcon />}
-                            onClick={onAdd}
-                        >
-                            Adicionar
-                        </Button>
-                    )}
+                    <div>
+                        {isAddingNew && (
+                            <Button
+                                variant="contained"
+                                color="success"
+                                onClick={onSave}
+                                sx={{ mr: 1 }}
+                            >
+                                Salvar
+                            </Button>
+                        )}
+                        {onAdd && !isAddingNew && (
+                            <Button
+                                variant="contained"
+                                startIcon={<AddIcon />}
+                                onClick={onAdd}
+                            >
+                                Adicionar
+                            </Button>
+                        )}
+                    </div>
                 </div>
                 
                 {loading ? (
@@ -65,10 +83,12 @@ export function DataTable<T extends { id: number }>({
                         <Table>
                             <TableHeader columns={columns} />
                             <TableBody 
-                                data={data} 
+                                data={data}
                                 columns={columns}
+                                onFieldChange={onFieldChange}
                                 onEdit={onEdit}
                                 onDelete={onDelete}
+                                isAddingNew={isAddingNew}
                             />
                         </Table>
                     </TableContainer>

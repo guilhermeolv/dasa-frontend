@@ -1,11 +1,26 @@
 import { DataTable } from "../../components/DataTable";
+import { categoriesService } from "../../services/categoriesService";
 import { Category } from "../../types/Category";
 
 export function CategoryList() {
-    const mockCategories: Category[] = [
-        { id: 1, title: 'Categoria 1', description: 'Descrição da categoria 1' },
-        { id: 2, title: 'Categoria 2', description: 'Descrição da categoria 2' },
-    ];
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    const loadCategories = async () => {
+        try {
+            setLoading(true);
+            const response = await categoriesService.getAll();
+            setCategories(response.data);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    useEffect(() => {
+        loadCategories();
+    }, []);
 
     const columns = [
         { field: 'ID', key: 'id' },
@@ -29,10 +44,25 @@ export function CategoryList() {
         <DataTable<Category>
             title="Categorias"
             columns={columns}
-            data={mockCategories}
+            data={[
+                ...(isAddingNew ? [{
+                    id: 0,
+                    ...newProduct,
+                    isNew: true
+                }] : []),
+                ...products.map(product => ({
+                    ...product,
+                    isEditing: product.id === editingId
+                }))
+            ]}
             onAdd={handleAdd}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            onSave={isAddingNew ? handleSaveNew : handleSaveEdit}
+            onFieldChange={isAddingNew ? handleNewProductChange : handleEditingChange}
+            loading={loading}
+            isAddingNew={isAddingNew}
+            editingId={editingId}
         />
     );
 }
