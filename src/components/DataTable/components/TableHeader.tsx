@@ -3,7 +3,6 @@ import {
     TableRow,
     TableCell
 } from '@mui/material'
-import React from 'react'
 
 interface Column {
     field: string
@@ -21,7 +20,7 @@ export function TableHeader({ columns }: TableHeaderProps) {
                 {columns.map((column) => (
                     <TableCell key={column.key}>{column.field}</TableCell>
                 ))}
-                <TableCell>Ações</TableCell>
+                <TableCell align="center">Ações</TableCell>
             </TableRow>
         </TableHead>
     )

@@ -1,4 +1,3 @@
-import React from 'react'
 import { 
   Table, 
   TableContainer, 
@@ -14,6 +13,13 @@ import { TableBody } from './components/TableBody'
 interface Column {
     field: string
     key: string
+    editable?: boolean
+    type?: string
+    options?: {
+        service: any
+        labelKey: string
+        valueKey: string
+    }
 }
 
 interface DataTableProps<T> {
@@ -22,11 +28,14 @@ interface DataTableProps<T> {
     data: T[]
     onAdd?: () => void
     onSave?: () => void
+    onEdit?: (id: number) => void
+    onDelete?: (id: number) => void
+    onCancel?: () => void
     onFieldChange?: (key: string, value: any) => void
     loading?: boolean
     isAddingNew?: boolean
-    onEdit?: (id: number) => void
-    onDelete?: (id: number) => void
+    editingId?: number | null
+    selectOptions?: Record<string, any[]>
 }
 
 export function DataTable<T extends { id: number }>({ 
@@ -34,12 +43,15 @@ export function DataTable<T extends { id: number }>({
     columns, 
     data,
     onAdd,
+    onEdit,
     onSave,
+    onDelete,
+    onCancel,
     onFieldChange,
     loading,
     isAddingNew,
-    onEdit,
-    onDelete
+    editingId,
+    selectOptions
 }: DataTableProps<T>) {
     return (
         <MUIContainer maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -52,17 +64,25 @@ export function DataTable<T extends { id: number }>({
                 }}>
                     <h2>{title}</h2>
                     <div>
-                        {isAddingNew && (
-                            <Button
-                                variant="contained"
-                                color="success"
-                                onClick={onSave}
-                                sx={{ mr: 1 }}
-                            >
-                                Salvar
-                            </Button>
-                        )}
-                        {onAdd && !isAddingNew && (
+                        {(isAddingNew || editingId) ? (
+                            <>
+                                <Button
+                                    variant="contained"
+                                    color="success"
+                                    onClick={onSave}
+                                    sx={{ mr: 1 }}
+                                >
+                                    Salvar
+                                </Button>
+                                <Button
+                                    variant="contained"
+                                    color="error"
+                                    onClick={onCancel}
+                                >
+                                    Cancelar
+                                </Button>
+                            </>
+                        ) : (
                             <Button
                                 variant="contained"
                                 startIcon={<AddIcon />}
@@ -89,6 +109,7 @@ export function DataTable<T extends { id: number }>({
                                 onEdit={onEdit}
                                 onDelete={onDelete}
                                 isAddingNew={isAddingNew}
+                                selectOptions={selectOptions}
                             />
                         </Table>
                     </TableContainer>

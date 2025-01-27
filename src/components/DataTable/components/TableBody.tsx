@@ -1,32 +1,32 @@
-import React from 'react'
 import { 
     TableBody as MUITableBody,
     TableRow,
     TableCell,
     IconButton,
-    Tooltip,
-    TextField
+    TextField,
+    Select,
+    MenuItem
 } from '@mui/material'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
-import SaveIcon from '@mui/icons-material/Save'
-import { Product } from '../../../types/Product'
 
 interface Column {
     field: string
     key: string
     editable?: boolean
     type?: string
+    options?: any
 }
 
-interface TableBodyProps {
-    data: Product[]
+interface TableBodyProps<T> {
+    data: T[]
     columns: Column[]
     onEdit?: (id: number) => void
     onDelete?: (id: number) => void
     onFieldChange?: (key: string, value: any) => void
     isAddingNew?: boolean
     editingId?: number | null
+    selectOptions?: Record<string, any[]>
 }
 
 export function TableBody({ 
@@ -35,43 +35,60 @@ export function TableBody({
     onFieldChange,
     onEdit,
     onDelete,
-    isAddingNew,
-    editingId 
-}: TableBodyProps) {
-    const formatCellValue = (value: any, column: Column) => {
-        if (value === null || value === undefined) {
-            return '-';
-        }
-
-        if (typeof value === 'object') {
-            if (value.title) return value.title;
-            if (value.name) return value.name;
-            return '-';
-        }
-
-        if (column.type === 'number') {
-            return Number(value).toLocaleString('pt-BR', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
-        }
-
-        return String(value);
-    };
-
+    selectOptions = {}
+}: TableBodyProps<T>) {
     const renderCell = (item: any, column: Column) => {
-        if ((item.isNew || item.isEditing) && column.editable) {
+        if (item.isEditing || (item.isNew && column.editable)) {
+            if (column.type === 'object' && column.options) {
+                console.log('selectOptions', selectOptions);
+                return (
+                    <Select
+                        value={item[column.key]?.id || ''}
+                        onChange={(e) => onFieldChange?.(column.key, {
+                            id: e.target.value,
+                            title: selectOptions[column.key]?.find(opt => opt.id === e.target.value)?.[column.options.labelKey]
+                        })}
+                        fullWidth
+                        size="small"
+                    >
+                        {selectOptions[column.key]?.map(option => (
+                            <MenuItem
+                                key={option.id}
+                                value={option.id}
+                            >
+                                {option[column.options.labelKey]}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                );
+            }
+
+            if (column.type === 'number') {
+                return (
+                    <TextField
+                        type="number"
+                        value={item[column.key] || ''}
+                        onChange={(e) => onFieldChange?.(column.key, e.target.value)}
+                        fullWidth
+                        size="small"
+                    />
+                );
+            }
+
             return (
                 <TextField
-                    size="small"
-                    type={column.type || 'text'}
                     value={item[column.key] || ''}
                     onChange={(e) => onFieldChange?.(column.key, e.target.value)}
                     fullWidth
+                    size="small"
                 />
             );
         }
-        return formatCellValue(item[column.key], column);
+
+        if (column.type === 'object') {
+            return item[column.key]?.[column.options?.labelKey] || '';
+        }
+        return item[column.key];
     };
 
     return (
@@ -83,33 +100,20 @@ export function TableBody({
                             {renderCell(item, column)}
                         </TableCell>
                     ))}
-                    <TableCell>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            {onEdit && !item.isNew && (
-                                <Tooltip title={item.isEditing ? "Salvar" : "Editar"}>
-                                    <IconButton 
-                                        onClick={() => onEdit(item.id)}
-                                        color={item.isEditing ? "success" : "primary"}
-                                        size="small"
-                                    >
-                                        {item.isEditing ? <SaveIcon /> : <EditIcon />}
-                                    </IconButton>
-                                </Tooltip>
+                    {(onEdit || onDelete) && (
+                        <TableCell align="center">
+                            {onEdit && !item.isNew && !item.isEditing && (
+                                <IconButton onClick={() => onEdit(item.id)} size="small">
+                                    <EditIcon />
+                                </IconButton>
                             )}
-                            
                             {onDelete && !item.isNew && !item.isEditing && (
-                                <Tooltip title="Excluir">
-                                    <IconButton 
-                                        onClick={() => onDelete(item.id)}
-                                        color="error"
-                                        size="small"
-                                    >
-                                        <DeleteIcon />
-                                    </IconButton>
-                                </Tooltip>
+                                <IconButton onClick={() => onDelete(item.id)} size="small" color="error">
+                                    <DeleteIcon />
+                                </IconButton>
                             )}
-                        </div>
-                    </TableCell>
+                        </TableCell>
+                    )}
                 </TableRow>
             ))}
         </MUITableBody>

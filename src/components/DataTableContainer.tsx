@@ -16,7 +16,11 @@ interface ServiceInterface<T> {
 interface DataTableContainerProps<T> {
     title: string;
     service: ServiceInterface<T>;
-    columns: Array<{ field: string, key: string, editable: boolean, type?: string }>;
+    columns: Array<{ field: string, key: string, editable: boolean, type?: string, options?: {
+        service: ServiceInterface<any>;
+        labelKey: string;
+        valueKey: string;
+    } }>;
 }
 
 export function DataTableContainer<T extends BaseItem>({ title, service, columns }: DataTableContainerProps<T>) {
@@ -26,6 +30,9 @@ export function DataTableContainer<T extends BaseItem>({ title, service, columns
     const [editingId, setEditingId] = useState<number | null>(null);
     const [newItem, setNewItem] = useState<Partial<T>>({});
     const [editingItem, setEditingItem] = useState<Partial<T>>({});
+    const [selectOptions, setSelectOptions] = useState<Record<string, any[]>>({});
+
+    console.log(items);
 
     const handleAdd = () => {
         setIsAddingNew(true);
@@ -96,6 +103,16 @@ export function DataTableContainer<T extends BaseItem>({ title, service, columns
         }
     };
 
+    const handleCancel = () => {
+        if (isAddingNew) {
+            setIsAddingNew(false);
+            setNewItem({});
+        } else if (editingId) {
+            setEditingId(null);
+            setEditingItem({});
+        }
+    };
+
     const loadItems = async () => {
         try {
             setLoading(true);
@@ -106,10 +123,24 @@ export function DataTableContainer<T extends BaseItem>({ title, service, columns
         } finally {
             setLoading(false);
         }
-    }
+    };
+
+    const loadSelectOptions = async () => {
+        const optionsPromises = columns
+            .filter(col => col.options?.service)
+            .map(async col => {
+                const response = await col.options!.service.getAll();
+                return [col.key, response.data];
+            });
+
+        const optionsResults = await Promise.all(optionsPromises);
+        const optionsMap = Object.fromEntries(optionsResults);
+        setSelectOptions(optionsMap);
+    };
 
     useEffect(() => {
         loadItems();
+        loadSelectOptions();
     }, []);
 
     return (
@@ -131,10 +162,12 @@ export function DataTableContainer<T extends BaseItem>({ title, service, columns
             onEdit={handleEdit}
             onDelete={handleDelete}
             onSave={isAddingNew ? handleSaveNew : handleSaveEdit}
+            onCancel={handleCancel}
             onFieldChange={isAddingNew ? handleNewItemChange : handleEditingChange}
             loading={loading}
             isAddingNew={isAddingNew}
             editingId={editingId}
+            selectOptions={selectOptions}
         />
     );
 }
