@@ -36,6 +36,8 @@ interface DataTableProps<T> {
     isAddingNew?: boolean
     editingId?: number | null
     selectOptions?: Record<string, any[]>
+    editingItem?: Partial<T>
+    errors?: Record<string, string>
 }
 
 export function DataTable<T extends { id: number }>({ 
@@ -51,7 +53,9 @@ export function DataTable<T extends { id: number }>({
     loading,
     isAddingNew,
     editingId,
-    selectOptions
+    selectOptions,
+    editingItem,
+    errors = {}
 }: DataTableProps<T>) {
     return (
         <MUIContainer maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -108,8 +112,10 @@ export function DataTable<T extends { id: number }>({
                                 onFieldChange={onFieldChange}
                                 onEdit={onEdit}
                                 onDelete={onDelete}
-                                isAddingNew={isAddingNew}
+                                editingId={editingId}
+                                editingItem={editingItem}
                                 selectOptions={selectOptions}
+                                errors={errors}
                             />
                         </Table>
                     </TableContainer>

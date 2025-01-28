@@ -9,13 +9,17 @@ import {
 } from '@mui/material'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
+import { NumericFormat } from 'react-number-format'
 
 interface Column {
     field: string
     key: string
     editable?: boolean
-    type?: string
-    options?: any
+    type?: 'text' | 'number' | 'object'
+    options?: {
+        labelKey: string
+        valueKey: string
+    }
 }
 
 interface TableBodyProps<T> {
@@ -27,6 +31,7 @@ interface TableBodyProps<T> {
     isAddingNew?: boolean
     editingId?: number | null
     selectOptions?: Record<string, any[]>
+    errors?: Record<string, string>
 }
 
 export function TableBody({ 
@@ -35,60 +40,136 @@ export function TableBody({
     onFieldChange,
     onEdit,
     onDelete,
-    selectOptions = {}
+    selectOptions = {},
+    errors = {}
 }: TableBodyProps<T>) {
-    const renderCell = (item: any, column: Column) => {
-        if (item.isEditing || (item.isNew && column.editable)) {
-            if (column.type === 'object' && column.options) {
-                console.log('selectOptions', selectOptions);
-                return (
-                    <Select
-                        value={item[column.key]?.id || ''}
-                        onChange={(e) => onFieldChange?.(column.key, {
-                            id: e.target.value,
-                            title: selectOptions[column.key]?.find(opt => opt.id === e.target.value)?.[column.options.labelKey]
-                        })}
-                        fullWidth
-                        size="small"
-                    >
-                        {selectOptions[column.key]?.map(option => (
-                            <MenuItem
-                                key={option.id}
-                                value={option.id}
-                            >
-                                {option[column.options.labelKey]}
-                            </MenuItem>
-                        ))}
-                    </Select>
-                );
-            }
-
-            if (column.type === 'number') {
-                return (
-                    <TextField
-                        type="number"
-                        value={item[column.key] || ''}
-                        onChange={(e) => onFieldChange?.(column.key, e.target.value)}
-                        fullWidth
-                        size="small"
-                    />
-                );
-            }
-
+    const renderTextField = (item: any, column: Column) => {
+        if (column.type === 'number' && column.key === 'price') {
             return (
-                <TextField
-                    value={item[column.key] || ''}
-                    onChange={(e) => onFieldChange?.(column.key, e.target.value)}
+                <NumericFormat
+                    customInput={TextField}
+                    value={item[column.key] ?? ''}
+                    onValueChange={(values) => {
+                        const { floatValue } = values;
+                        onFieldChange?.(column.key, floatValue || null);
+                    }}
+                    thousandSeparator="."
+                    decimalSeparator=","
+                    prefix="R$ "
+                    decimalScale={2}
+                    fixedDecimalScale
                     fullWidth
                     size="small"
+                    disabled={!column.editable}
+                    error={!!errors[column.key]}
+                    helperText={errors[column.key]}
+                    inputProps={{
+                        'aria-label': column.field,
+                    }}
                 />
             );
         }
 
-        if (column.type === 'object') {
-            return item[column.key]?.[column.options?.labelKey] || '';
+        return (
+            <TextField
+                value={item[column.key] ?? ''}
+                onChange={(e) => {
+                    e.preventDefault();
+                    const newValue = column.type === 'number' 
+                        ? Number(e.target.value) || null
+                        : e.target.value;
+                    onFieldChange?.(column.key, newValue);
+                }}
+                type={column.type === 'number' ? 'number' : 'text'}
+                fullWidth
+                size="small"
+                disabled={!column.editable}
+                error={!!errors[column.key]}
+                helperText={errors[column.key]}
+                inputProps={{
+                    'aria-label': column.field,
+                }}
+            />
+        );
+    };
+
+    const renderSelect = (item: any, column: Column) => {
+        const relatedObject = item[column.key];
+        const currentValue = relatedObject ? relatedObject[column.options?.valueKey || 'id'] : '';
+        const valueKey = column.options?.valueKey || 'id';
+        const labelKey = column.options?.labelKey || '';
+        
+        return (
+            <Select
+                value={currentValue}
+                displayEmpty
+                onChange={(e) => {
+                    e.preventDefault();
+                    const selectedId = e.target.value;
+                    const selectedObject = selectOptions[column.key]?.find(
+                        option => option[valueKey] === selectedId
+                    );
+                    onFieldChange?.(column.key, selectedObject || null);
+                }}
+                fullWidth
+                size="small"
+                disabled={!column.editable}
+            >
+                <MenuItem value="">-</MenuItem>
+                {selectOptions[column.key]?.map(option => (
+                    <MenuItem 
+                        key={option[valueKey]} 
+                        value={option[valueKey]}
+                    >
+                        {option[labelKey]}
+                    </MenuItem>
+                ))}
+            </Select>
+        );
+    };
+
+    const formatCurrency = (value: number) => {
+        return new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+        }).format(value);
+    };
+
+    const renderCell = (item: any, column: Column) => {
+        if (item.isEditing || item.isNew) {
+            if (column.type === 'object' && column.options) {
+                return renderSelect(item, column);
+            }
+            return renderTextField(item, column);
+        }
+        if (column.type === 'object' && column.options) {
+            const relatedObject = item[column.key];
+            return relatedObject ? relatedObject[column.options.labelKey] : '-';
+        }
+        if (column.type === 'number' && column.key === 'price') {
+            return formatCurrency(item[column.key]);
         }
         return item[column.key];
+    };
+
+    const renderActions = (item: any) => {
+        if (!onEdit && !onDelete) return null;
+        if (item.isNew || item.isEditing) return null;
+
+        return (
+            <TableCell align="center">
+                {onEdit && (
+                    <IconButton onClick={() => onEdit(item.id)} size="small">
+                        <EditIcon />
+                    </IconButton>
+                )}
+                {onDelete && (
+                    <IconButton onClick={() => onDelete(item.id)} size="small" color="error">
+                        <DeleteIcon />
+                    </IconButton>
+                )}
+            </TableCell>
+        );
     };
 
     return (
@@ -100,20 +181,7 @@ export function TableBody({
                             {renderCell(item, column)}
                         </TableCell>
                     ))}
-                    {(onEdit || onDelete) && (
-                        <TableCell align="center">
-                            {onEdit && !item.isNew && !item.isEditing && (
-                                <IconButton onClick={() => onEdit(item.id)} size="small">
-                                    <EditIcon />
-                                </IconButton>
-                            )}
-                            {onDelete && !item.isNew && !item.isEditing && (
-                                <IconButton onClick={() => onDelete(item.id)} size="small" color="error">
-                                    <DeleteIcon />
-                                </IconButton>
-                            )}
-                        </TableCell>
-                    )}
+                    {renderActions(item)}
                 </TableRow>
             ))}
         </MUITableBody>

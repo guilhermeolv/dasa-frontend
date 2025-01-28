@@ -1,50 +1,73 @@
-# React + TypeScript + Vite
+# DASA Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Uma aplicação React moderna para gerenciamento de produtos e categorias, construída com TypeScript, Material UI e Vite.
 
-Currently, two official plugins are available:
+## 🚀 Tecnologias
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- React 18
+- TypeScript
+- Material UI
+- Styled Components
+- React Router DOM
+- Axios
+- Zod (validação)
+- React Number Format
+- Redux Toolkit
 
-## Expanding the ESLint configuration
+## 📋 Funcionalidades
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+- Gerenciamento de produtos
+  - Listagem
+  - Criação
+  - Edição
+  - Exclusão
+  - Validação de campos
+  - Formatação de valores monetários
+  
+- Gerenciamento de categorias
+  - Listagem
+  - Criação
+  - Edição
+  - Exclusão
+  - Validação de campos
 
-- Configure the top-level `parserOptions` property like this:
+## 🛠️ Instalação
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+1. Clone o repositório
+2. Instale as dependências
+npm install
+3. Execute o projeto
+npm run dev
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+## 🔧 Configuração
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+O projeto espera uma API rodando em `http://localhost:3000`. Você pode alterar a URL base da API no arquivo `src/services/api.ts`.
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
-```
+## 📦 Estrutura do Projeto
+src/
+├── components/ # Componentes reutilizáveis
+├── constants/ # Constantes da aplicação
+├── hooks/ # Hooks customizados
+├── pages/ # Páginas da aplicação
+├── services/ # Serviços de API
+├── styles/ # Estilos globais e temas
+├── types/ # Tipos TypeScript
+└── schemas/ # Schemas de validação Zod
+
+## 🧪 Scripts Disponíveis
+
+- `npm run dev`: Inicia o servidor de desenvolvimento
+- `npm run build`: Gera a build de produção
+- `npm run lint`: Executa o linter
+- `npm run preview`: Visualiza a build de produção localmente
+
+## 🎨 Temas
+
+A aplicação utiliza o Material UI para componentes base e Styled Components para estilização customizada. O tema pode ser configurado em:
+
+- `src/App.tsx` (tema Material UI)
+- `src/styles/theme/index.ts` (tema Styled Components)
+
+## 📄 Licença
+
+Este projeto está sob a licença MIT.

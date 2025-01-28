@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 import { DataTable } from "./DataTable";
+import { z } from "zod";
+import { useValidation } from "../hooks/useValidation";
+import { useSelectOptions } from "../hooks/useSelectOptions";
 
 interface BaseItem {
     id: number;
@@ -20,23 +23,25 @@ interface DataTableContainerProps<T> {
         service: ServiceInterface<any>;
         labelKey: string;
         valueKey: string;
-    } }>;
+    }, validation?: z.ZodType<any> }>;
+    schema?: z.ZodType<T>;
 }
 
-export function DataTableContainer<T extends BaseItem>({ title, service, columns }: DataTableContainerProps<T>) {
+export function DataTableContainer<T extends BaseItem>({ title, service, columns, schema }: DataTableContainerProps<T>) {
     const [items, setItems] = useState<T[]>([]);
     const [loading, setLoading] = useState(false);
     const [isAddingNew, setIsAddingNew] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [newItem, setNewItem] = useState<Partial<T>>({});
     const [editingItem, setEditingItem] = useState<Partial<T>>({});
-    const [selectOptions, setSelectOptions] = useState<Record<string, any[]>>({});
 
-    console.log(items);
+    const { errors, validateField, validateItem } = useValidation<T>(schema);
+    const { selectOptions, loadSelectOptions } = useSelectOptions(columns);
 
     const handleAdd = () => {
         setIsAddingNew(true);
         setNewItem({});
+        loadSelectOptions();
     };
 
     const handleEdit = (id: number) => {
@@ -44,39 +49,39 @@ export function DataTableContainer<T extends BaseItem>({ title, service, columns
         if (item) {
             setEditingId(id);
             setEditingItem({ ...item });
+            loadSelectOptions();
         }
     };
 
     const handleSaveEdit = async () => {
-        if (!editingId) return;
+        if (!editingId || !validateItem(editingItem as T)) return;
 
         try {
             setLoading(true);
-            await service.update(editingId, editingItem as T);
-            await loadItems();
+            const response = await service.update(editingId, editingItem as T);
+            setItems(prev => prev.map(item => 
+                item.id === editingId ? response.data : item
+            ));
             setEditingId(null);
             setEditingItem({});
+            await loadSelectOptions();
         } catch (error) {
-            console.error('Erro ao atualizar produto:', error);
+            console.error('Erro ao atualizar item:', error);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleEditingChange = (key: string, value: any) => {
-        setEditingItem(prev => ({
-            ...prev,
-            [key]: value
-        }));
-    };
-
     const handleSaveNew = async () => {
+        if (!validateItem(newItem as T)) return;
+
         try {
             setLoading(true);
-            await service.create(newItem as T);
-            await loadItems();
+            const response = await service.create(newItem as T);
+            setItems(prev => [...prev, response.data]);
             setIsAddingNew(false);
             setNewItem({});
+            await loadSelectOptions();
         } catch (error) {
             console.error('Erro ao criar item:', error);
         } finally {
@@ -84,18 +89,11 @@ export function DataTableContainer<T extends BaseItem>({ title, service, columns
         }
     };
 
-    const handleNewItemChange = (key: string, value: any) => {
-        setNewItem(prev => ({
-            ...prev,
-            [key]: value
-        }));
-    };
-
     const handleDelete = async (id: number) => {
         try {
             setLoading(true);
             await service.delete(id);
-            await loadItems();
+            setItems(prevItems => prevItems.filter(item => item.id !== id));
         } catch (error) {
             console.error('Erro ao deletar item:', error);
         } finally {
@@ -113,34 +111,38 @@ export function DataTableContainer<T extends BaseItem>({ title, service, columns
         }
     };
 
-    const loadItems = async () => {
-        try {
-            setLoading(true);
-            const response = await service.getAll();
-            setItems(response.data);
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setLoading(false);
+    const handleFieldChange = (key: string, value: any) => {
+        const column = columns.find(col => col.key === key);
+        validateField(key, value, column?.validation);
+        if (isAddingNew) {
+            setNewItem(prev => {
+                const newItem = { ...prev, [key]: value };
+                console.log('newItem', newItem);
+                return newItem;
+            });
+        } else {
+            setEditingItem(prev => {
+                const updatedItem = { ...prev, [key]: value };
+                console.log('editingItem', updatedItem);
+                return updatedItem;
+            });
         }
     };
 
-    const loadSelectOptions = async () => {
-        const optionsPromises = columns
-            .filter(col => col.options?.service)
-            .map(async col => {
-                const response = await col.options!.service.getAll();
-                return [col.key, response.data];
-            });
-
-        const optionsResults = await Promise.all(optionsPromises);
-        const optionsMap = Object.fromEntries(optionsResults);
-        setSelectOptions(optionsMap);
-    };
-
     useEffect(() => {
+        const loadItems = async () => {
+            try {
+                setLoading(true);
+                const response = await service.getAll();
+                setItems(response.data);
+            } catch (error) {
+                console.error(error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
         loadItems();
-        loadSelectOptions();
     }, []);
 
     return (
@@ -148,13 +150,10 @@ export function DataTableContainer<T extends BaseItem>({ title, service, columns
             title={title}
             columns={columns}
             data={[
-                ...(isAddingNew ? [{
-                    id: 0,
-                    ...newItem,
-                    isNew: true
-                }] : []),
+                ...(isAddingNew ? [{ id: 0, ...newItem, isNew: true }] : []),
                 ...items.map(item => ({
                     ...item,
+                    ...(item.id === editingId ? editingItem : {}),
                     isEditing: item.id === editingId
                 }))
             ]}
@@ -163,11 +162,12 @@ export function DataTableContainer<T extends BaseItem>({ title, service, columns
             onDelete={handleDelete}
             onSave={isAddingNew ? handleSaveNew : handleSaveEdit}
             onCancel={handleCancel}
-            onFieldChange={isAddingNew ? handleNewItemChange : handleEditingChange}
+            onFieldChange={handleFieldChange}
             loading={loading}
             isAddingNew={isAddingNew}
             editingId={editingId}
             selectOptions={selectOptions}
+            errors={errors}
         />
     );
 }
