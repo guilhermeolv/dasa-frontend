@@ -58,13 +58,13 @@ export function DataTable<T extends { id: number }>({
     errors = {}
 }: DataTableProps<T>) {
     return (
-        <MUIContainer maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-            <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+        <MUIContainer maxWidth="lg" sx={{ mt: 4, mb: 4, position: 'relative', zIndex: 1000 }}>
+            <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }} >
                 <div style={{ 
                     display: 'flex', 
                     justifyContent: 'space-between', 
                     alignItems: 'center',
-                    marginBottom: '1rem'
+                    marginBottom: '1rem',
                 }}>
                     <h2>{title}</h2>
                     <div>

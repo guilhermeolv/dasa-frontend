@@ -10,6 +10,8 @@ export const Container = styled.header`
     position: fixed;
     top: 0;
     left: 0;
-    height: 60px;
+    height: 160px;
     z-index: 1000;
+    justify-content: start;
+    align-items: center;
 `

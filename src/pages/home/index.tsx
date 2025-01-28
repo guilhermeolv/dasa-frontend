@@ -28,7 +28,7 @@ export default function HomePage() {
     ]
 
     return (
-        <Container sx={{ mt: 10 }} maxWidth="lg">
+        <Container sx={{ mt: 10, position: 'relative', zIndex: 1000 }} maxWidth="lg">
             <Grid container spacing={10} justifyContent="center">
                 {menuItems.map((item) => (
                     <Grid item xs={12} sm={6} md={4} key={item.path}>
@@ -38,6 +38,7 @@ export default function HomePage() {
                                 display: 'flex',
                                 flexDirection: 'column',
                                 alignItems: 'center',
+                                justifyContent: 'center',
                                 p: 2,
                                 cursor: 'pointer',
                                 '&:hover': {
