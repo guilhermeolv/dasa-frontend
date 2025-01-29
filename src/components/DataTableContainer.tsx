@@ -6,7 +6,8 @@ import { useSelectOptions } from "../hooks/useSelectOptions";
 
 interface BaseItem {
     id: number;
-    [key: string]: any
+    categoryId?: number;
+    category?: { id: number } | number;
 }
 
 interface ServiceInterface<T> {
@@ -74,10 +75,14 @@ export function DataTableContainer<T extends BaseItem>({ title, service, columns
 
     const handleSaveNew = async () => {
         if (!validateItem(newItem as T)) return;
-
         try {
             setLoading(true);
-            const response = await service.create(newItem as T);
+            const itemToSave = {
+                ...newItem,
+                categoryId: typeof newItem.category === 'object' ? newItem.category?.id : newItem.category
+            } as unknown as T;
+            
+            const response = await service.create(itemToSave);
             setItems(prev => [...prev, response.data]);
             setIsAddingNew(false);
             setNewItem({});
